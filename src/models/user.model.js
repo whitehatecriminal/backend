@@ -1,9 +1,9 @@
 import { DataTypes } from "sequelize";
 import bcrypt from "bcrypt"; //password co enceypt karne ke liye
 import jwt from "jsonwebtoken"; //token generate karne ke liye
-import { sequelize } from "../config/database.js"; //database cofiguration ko import karta hai
+import { Sequelize } from "../db/index.js";
 
-const User = sequelize.define("User", //define model and user table name of database
+const User = Sequelize.define("User", //define model and user table name of database
   {
     username: {
       type: DataTypes.STRING,
@@ -15,7 +15,7 @@ const User = sequelize.define("User", //define model and user table name of data
       allowNull: false,
       unique: true,
     },
-    fullName: {
+    fullname: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -35,6 +35,7 @@ const User = sequelize.define("User", //define model and user table name of data
     },
   },
   { 
+    database: 'LEARN', //SELECT DATABASE
     timestamps: true 
   }
 );
@@ -72,4 +73,5 @@ User.prototype.generateRefreshToken = function () {
   });
 };
 
-export default User;
+Sequelize.models.User; //tell sequlize make model for me
+export {User};

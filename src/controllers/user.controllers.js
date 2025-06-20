@@ -15,13 +15,11 @@ const registerUser = asyncHandler( async (req, res) =>{
     // check for user creation
     // return response
 
+    //Taking input from frontend
     const {fullname, email, username, password} = req.body
     console.log("email", email);
 
-    // if(fullname === ""){ //in this method we need more ifelse
-    //     throw new ApiError(400, "full name is required")
-    // }
-
+    // Checking validation not empty
     if(
         [fullname, email, username, password].some((field) => 
         field?.trim() === "")
@@ -29,8 +27,8 @@ const registerUser = asyncHandler( async (req, res) =>{
         throw new ApiError(400, "All fields are required")
     }
 
-    const exiteduser = User.findOne({
-        $or: [{ username }, { email }]
+    const exiteduser = await User.findOne({ //retrive a data from database
+        $or: [{ username }, { email }] //$or = matching any of the provided conditions.
     })
 
     if (exiteduser) {
@@ -40,7 +38,7 @@ const registerUser = asyncHandler( async (req, res) =>{
     const avatarLoacalPath = req.files?.avatar[0]?.path;
     const coverImageLoacalPath = req.files?.coverImage[0]?.path;
 
-    if (!avatarLoacalPath) {
+    if (!avatarLoacalPath) { //checking image
         throw new ApiError(400, "Avatar file is required")
     }
 
@@ -51,7 +49,7 @@ const registerUser = asyncHandler( async (req, res) =>{
         throw new ApiError(400, "Avatar file is required")
     }
 
-    const user = await User.create({
+    const user = await User.create({ //Creating entry of a user in Database
         fullname,
         avatar: avatar.url,
         coverImage: coverImage?.url || "",
@@ -60,9 +58,9 @@ const registerUser = asyncHandler( async (req, res) =>{
         username: username.toLowerCase()
     })
 
-    const createduser = await User.findById(user._id).select(
-        "-password -refreshToken"
-    )
+    const createduser = await User.findByPk(user.id, { //remove password or change password mode
+        attributes: { exclude: ['password', 'refreshToken'] }
+    });
 
     if (!createduser) {
         throw new ApiError(500, "Something went wrong while registering the user")
