@@ -3,6 +3,7 @@ import {ApiError} from "../utils/ApiError.js";
 import {User} from "../models/user.model.js";
 import {uplodonCloudnary} from "../utils/cloudnary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { Op } from "sequelize";
 
 const registerUser = asyncHandler( async (req, res) =>{
     // get user date from frontend
@@ -17,7 +18,7 @@ const registerUser = asyncHandler( async (req, res) =>{
 
     //Taking input from frontend
     const {fullname, email, username, password} = req.body
-    console.log("email", email);
+    console.log("requestBody", req.body);
 
     // Checking validation not empty
     if(
@@ -28,15 +29,21 @@ const registerUser = asyncHandler( async (req, res) =>{
     }
 
     const exiteduser = await User.findOne({ //retrive a data from database
-        $or: [{ username }, { email }] //$or = matching any of the provided conditions.
-    })
+        where: {
+            [Op.or]: [
+                { username: username.toLowerCase().trim() },
+                { email: email.toLowerCase().trim() }
+            ]
+        }
+    });
+
 
     if (exiteduser) {
         throw new ApiError(409, "User with email or username alredy exsits")
     }
 
-    const avatarLoacalPath = req.files?.avatar[0]?.path;
-    const coverImageLoacalPath = req.files?.coverImage[0]?.path;
+    const avatarLoacalPath = req.files?.avatar?.[0]?.path;
+    const coverImageLoacalPath = req.files?.coverImage?.[0]?.path;
 
     if (!avatarLoacalPath) { //checking image
         throw new ApiError(400, "Avatar file is required")

@@ -9,11 +9,11 @@ router.route("/register").post(
     upload.fields([
         {
             name: "avatar",
-            maxCount: 100
+            maxCount: 1
         },
         {
             name: "coverImage",
-            maxCount: 100
+            maxCount: 1
         }
     ]),
     registerUser)

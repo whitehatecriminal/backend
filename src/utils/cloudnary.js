@@ -16,7 +16,8 @@ const uplodonCloudnary = async (localFilePath) => {
             resource_type: "auto"
         })
         //file has been uploaded
-        console.log("file is uploaded on clodnary", response.url);
+        // console.log("file is uploaded on clodnary", response.url);
+        fs.unlinkSync(localFilePath) // if error come then it will not upload
         return response
 
     } catch (error) {
