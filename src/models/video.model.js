@@ -1,4 +1,4 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, Sequelize } from "sequelize";
 import { sequelize } from "../config/database.js";
 
 const Video = sequelize.define(
@@ -33,7 +33,11 @@ const Video = sequelize.define(
         defaultValue: true 
     },
   },
-  { timestamps: true }
+  { 
+    database: 'LEARN',
+    timestamps: true }
 );
+
+Sequelize.models.Video;
 
 export default Video;

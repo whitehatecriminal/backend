@@ -5,6 +5,22 @@ import {uplodonCloudnary} from "../utils/cloudnary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Op } from "sequelize";
 
+const generateAccessAndRefreshToken = async(userId) =>{
+    try {
+        const user = await User.findByPk(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({validate: false})
+
+        return {accessToken, refreshToken}
+
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating refresh token")
+    }
+}
+
 const registerUser = asyncHandler( async (req, res) =>{
     // get user date from frontend
     // validation - not empty
@@ -12,7 +28,7 @@ const registerUser = asyncHandler( async (req, res) =>{
     // check for images, check for avatar
     // uload them to cloudnary, avatar
     // create user object - create entry in db
-    // remove password and referesh token field form  response
+    // remove password and refresh token field form  response
     // check for user creation
     // return response
 
@@ -78,5 +94,90 @@ const registerUser = asyncHandler( async (req, res) =>{
     )
 })
 
+const loginuser = asyncHandler(async (req, res) =>{
+    // req body -> data
+    // username or email
+    // find the user
+    // password check
+    // access and refersh token
+    // send cookie
 
-export {registerUser}
+    const {email, username, password} = req.body
+
+    if (!username && !email) { //koi bhe ek na ho toh
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({ //checking user in database
+        where: {
+            [Op.or]: [
+                {username},
+                {email}
+            ]
+        }
+    });
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+    if (!isPasswordValid) {
+        throw new ApiError(404, "Invalid user password")
+    }
+
+    const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user.id)
+
+    const loggedInUser = await User.findByPk(user.id, {
+        attributes: {
+            exclude: ["password", "refreshToken"] //these field os not required
+        }
+    })
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .cookie("accesToken", accessToken, options)
+    .cookie("refreshToken", refreshToken. options)
+    .json(
+        new ApiResponse(
+            200,
+            {
+                user: loggedInUser, accessToken, refreshToken
+            },
+            "User logged In Successfully"
+        )
+    )
+})
+
+const logoutUser = asyncHandler(async(req, res) => {
+    await User.update(
+        { 
+            refreshToken : null
+        },
+        {
+            where: {id: req.user.id}
+        }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out"))
+})
+
+export {
+    registerUser,
+    loginuser,
+    logoutUser
+}
