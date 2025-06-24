@@ -57,7 +57,7 @@ User.prototype.generateAccessToken = function () {
       id: this.id,
       email: this.email,
       username: this.username,
-      fullName: this.fullName,
+      fullName: this.fullname,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {

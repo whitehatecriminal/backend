@@ -4,12 +4,15 @@ import {User} from "../models/user.model.js";
 import {uplodonCloudnary} from "../utils/cloudnary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Op } from "sequelize";
+import jwt from "jsonwebtoken"
 
 const generateAccessAndRefreshToken = async(userId) =>{
     try {
         const user = await User.findByPk(userId)
         const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+        console.log("This is the access Token", accessToken);
+        const refreshToken = user.generateRefreshToken();
+        console.log("This is the referesh Token", refreshToken);
 
         user.refreshToken = refreshToken
         await user.save({validate: false})
@@ -136,13 +139,14 @@ const loginuser = asyncHandler(async (req, res) =>{
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: false, // true if using HTTPS
+        sameSite: "lax"
     }
 
     return res
     .status(200)
-    .cookie("accesToken", accessToken, options)
-    .cookie("refreshToken", refreshToken. options)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(
         new ApiResponse(
             200,
@@ -164,11 +168,6 @@ const logoutUser = asyncHandler(async(req, res) => {
         }
     )
 
-    const options = {
-        httpOnly: true,
-        secure: true
-    }
-
     return res
     .status(200)
     .clearCookie("accessToken", options)
@@ -176,8 +175,59 @@ const logoutUser = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, {}, "User logged Out"))
 })
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    // access referesh token
+    const incomingRefreshtoken = req.cookies.refreshToken || req.body.refreshToken
+
+    if (incomingRefreshtoken) {
+        throw new ApiError(401, "unauthorize request token not correct")
+    }
+    try {
+        const decodedToken = jwt.verify( //decoded token
+            incomingRefreshtoken, 
+            process.env.ACCESS_TOKEN_SECRET
+        )
+    
+        const user = await User.findByPk(decodedToken?.id)
+    
+        if (!user) {
+            throw new ApiError(401, "Invalid refresh Token")
+        }
+    
+        if (incomingRefreshtoken !== user?.refreshToken) {
+            throw new ApiError(401, "Referesh token is expired or used")
+        }
+    
+        const options = {
+            httpOnly: true,
+            secure: false
+        }
+    
+        const {accessToken, newrefreshToken} = await generateAccessAndRefreshToken(user.id)
+    
+        return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newrefreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    accessToken, 
+                    refreshToken: newrefreshToken,
+                },
+                "Access token refereshed"
+                
+            )
+        )
+    } catch (error) {
+        throw new ApiError(401, error?.message || "Invalid refersh Token")
+    }
+})
+
 export {
     registerUser,
     loginuser,
-    logoutUser
+    logoutUser,
+    refreshAccessToken
 }
