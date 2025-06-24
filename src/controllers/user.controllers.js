@@ -3,7 +3,7 @@ import {ApiError} from "../utils/ApiError.js";
 import {User} from "../models/user.model.js";
 import {uplodonCloudnary} from "../utils/cloudnary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { Op } from "sequelize";
+import { Op, where } from "sequelize";
 import jwt from "jsonwebtoken"
 
 const generateAccessAndRefreshToken = async(userId) =>{
@@ -225,9 +225,146 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 })
 
+const changeCurrentPassword = asyncHandler(async(req, res) => {
+    const {oldPassword, newPassword} = req.body
+
+    const user = await User.findByPk(req.user?.id)
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+    if (!isPasswordCorrect) {
+        throw new ApiError(400, "Old Password is not correct")
+    }
+
+    user.password = newPassword
+    await user.save({validate : false})
+
+    return res.status(200)
+    .json(new ApiResponse(200, {}, "Password changed succefully"))
+})
+
+const getcurrentuser = asyncHandler(async (req, res) => {
+    return res
+    .status(200)
+    .json(200, req.user, "current user successfully")
+})
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+    const {fullname, email} = req.body
+
+    if (!fullname || !email) {
+        throw new ApiError(400, "All  fileds are required")
+    }
+
+    const user = await User.update(
+        {fullname, email},
+        {            
+            where: {
+                id: req.user?.id
+            },
+        }
+    );
+    if (user === 0) {
+        throw new ApiError(404, "User not found");
+    }
+
+    await User.findByPk(req.user?.id, {
+        attributes: ["id", "fullname", "email"]
+    });
+
+    res
+    .status(200)
+    .json(new ApiResponse(
+        200, {}, 
+        "Account details updated"
+    ));
+})
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    const avatarLocalPath = req.file?.path
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is missing")
+    }
+
+    const avatar = await uplodonCloudnary(avatarLocalPath);
+
+    if(!avatar?.url){
+        throw new ApiError(400, "Error while uploading on avatar")
+    }
+
+    const user = await User.update(
+        {avatar: avatar.url},
+        { 
+            where: {
+                id: req.user?.id
+            },
+        }
+    );
+    if (user === 0) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const updatedavatar = await User.findByPk(req.file?.id, {
+        attributes: ["avatar"]
+    }
+    )
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200, updatedavatar, "avatar  updated susscefully"
+        )
+    )
+}); 
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+    const coverImageLocalPath = req.file?.path
+
+    if (!coverImageLocalPath) {
+        throw new ApiError(400, "Avatar file is missing")
+    }
+
+    const coverImage = await uplodonCloudnary(coverImageLocalPath);
+
+    if(!coverImage?.url){
+        throw new ApiError(400, "Error while uploading on coverImage")
+    }
+
+    const user = await User.update(
+        {coverImage: coverImage.url},
+        { 
+            where: {
+                id: req.user?.id
+            },
+        }
+    );
+    if (user === 0) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const updatedcoverImage = await User.findByPk(req.file?.id, {
+        attributes: ["coverImage"]
+    }
+    )
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200, updatedcoverImage, "coverImage  updated susscefully"
+        )
+    )
+})
+
 export {
     registerUser,
     loginuser,
     logoutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    changeCurrentPassword,
+    getcurrentuser,
+    updateAccountDetails,
+    updateUserAvatar,
+    updateUserCoverImage
 }
