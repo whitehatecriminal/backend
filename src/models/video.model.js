@@ -32,11 +32,21 @@ const Video = sequelize.define(
         type: DataTypes.BOOLEAN, 
         defaultValue: true 
     },
+    ownerId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id'
+      }
+    }
   },
   { 
     database: 'LEARN',
     timestamps: true }
 );
+
+Video.belongsTo(User, { as: "owner", foreignKey: "ownerId" });
 
 Sequelize.models.Video;
 

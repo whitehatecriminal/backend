@@ -3,8 +3,10 @@ import {ApiError} from "../utils/ApiError.js";
 import {User} from "../models/user.model.js";
 import {uplodonCloudnary} from "../utils/cloudnary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { Op, where } from "sequelize";
+import { col, fn, Op, where } from "sequelize";
 import jwt from "jsonwebtoken"
+import {Subscription} from "../models/subscription.models.js"
+import Video from "../models/video.model.js";
 
 const generateAccessAndRefreshToken = async(userId) =>{
     try {
@@ -357,6 +359,88 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     )
 })
 
+const  getUserChannelProfile = asyncHandler(async (req, res)=> {
+    const {username} = req.parms;
+
+    if(!username?.trim()){
+        throw new ApiError(400, "Channel not found")
+    }
+
+    const channel = await User.findOne({
+  where: where(fn('LOWER', col('username')), username.toLowerCase()),
+  attributes: ['fullName', 'username', 'avatar', 'coverImage', 'email'],
+  include: [
+    {
+      model: Subscription,
+      as: 'subscribers',
+      attributes: ['subscriber'] // only fetch subscriber IDs
+    },
+    {
+      model: Subscription,
+      as: 'subscribedTo',
+      attributes: ['channel'] // only fetch channel IDs
+    }
+  ]
+});
+
+if (!channel) {
+  throw new ApiError(404, "Channel does not exist");
+}
+
+// Process the counts and isSubscribed in JS (since Sequelize doesn't support $addFields-like transformations directly)
+
+const subscribersCount = channel.subscribers.length;
+const channelsSubscribedToCount = channel.subscribedTo.length;
+const isSubscribed = channel.subscribers.some(
+  sub => sub.subscriber.toString() === req.user?._id.toString()
+);
+
+const result = {
+  fullName: channel.fullName,
+  username: channel.username,
+  avatar: channel.avatar,
+  coverImage: channel.coverImage,
+  email: channel.email,
+  subscribersCount,
+  channelsSubscribedToCount,
+  isSubscribed
+};
+
+return res.status(200).json(
+  new ApiResponse(200, result, "User channel fetched successfully")
+);
+})
+
+const getWatchHistory = asyncHandler(async (req, res) =>{
+    const user = await User.findOne({
+        where: { id: req.user._id },
+        include: [
+            {
+                model: Video,
+                as: "watchHistory",
+                through: { attributes: [] }, // exclude join table data
+                include: [
+                    {
+                        model: User,
+                        as: "owner",
+                        attributes: ["fullname", "username", "avatar"]
+                    }
+                ]
+            }
+        ]
+    }
+);
+
+return res.status(200).json(
+  new ApiResponse(
+    200,
+    user?.watchHistory || [],
+    "Watch history fetched successfully"
+  )
+);
+
+})
+
 export {
     registerUser,
     loginuser,
@@ -366,5 +450,7 @@ export {
     getcurrentuser,
     updateAccountDetails,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserChannelProfile,
+    getWatchHistory
 }

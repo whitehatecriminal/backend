@@ -2,6 +2,7 @@ import { DataTypes } from "sequelize";
 import bcrypt from "bcrypt"; //password co enceypt karne ke liye
 import jwt from "jsonwebtoken"; //token generate karne ke liye
 import { Sequelize } from "../db/index.js";
+import Video from "./video.model.js"
 
 const User = Sequelize.define("User", //define model and user table name of database
   {
@@ -40,6 +41,13 @@ const User = Sequelize.define("User", //define model and user table name of data
   }
 );
 
+User.belongsToMany(Video, {
+  through: UserWatchHistory,
+  foreignKey: "userId",
+  otherKey: "videoId",
+  as: "watchHistory"
+});
+
 // new user password encrypt
 User.beforeCreate(async (user) => {
   user.password = await bcrypt.hash(user.password, 10);
@@ -72,6 +80,7 @@ User.prototype.generateRefreshToken = function () {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
   });
 };
+
 
 Sequelize.models.User; //tell sequlize make model for me
 export {User};
