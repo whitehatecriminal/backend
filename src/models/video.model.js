@@ -37,7 +37,7 @@ const Video = Sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: User,
         key: 'id'
       }
     }
@@ -48,6 +48,6 @@ const Video = Sequelize.define(
 );
 
 
-Sequelize.models.Video;
+
 
 export default Video;

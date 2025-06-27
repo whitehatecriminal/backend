@@ -2,7 +2,6 @@ import { DataTypes } from "sequelize";
 import bcrypt from "bcrypt"; //password co enceypt karne ke liye
 import jwt from "jsonwebtoken"; //token generate karne ke liye
 import { Sequelize } from "../db/index.js";
-import Video from "./video.model.js"
 
 const User = Sequelize.define("User", //define model and user table name of database
   {
@@ -76,5 +75,4 @@ User.prototype.generateRefreshToken = function () {
 };
 
 
-Sequelize.models.User; //tell sequlize make model for me
 export {User};
