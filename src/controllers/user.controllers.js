@@ -162,13 +162,19 @@ const loginuser = asyncHandler(async (req, res) =>{
 
 const logoutUser = asyncHandler(async(req, res) => {
     await User.update(
-        { 
+        {
+            accessToken: null,
             refreshToken : null
         },
         {
             where: {id: req.user.id}
-        }
-    )
+        },
+    );
+    const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Lax"
+    };
 
     return res
     .status(200)

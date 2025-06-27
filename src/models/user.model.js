@@ -41,12 +41,6 @@ const User = Sequelize.define("User", //define model and user table name of data
   }
 );
 
-User.belongsToMany(Video, {
-  through: UserWatchHistory,
-  foreignKey: "userId",
-  otherKey: "videoId",
-  as: "watchHistory"
-});
 
 // new user password encrypt
 User.beforeCreate(async (user) => {

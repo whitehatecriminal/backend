@@ -1,7 +1,8 @@
-import { DataTypes, Sequelize } from "sequelize";
-import { sequelize } from "../config/database.js";
+import { DataTypes } from "sequelize";
+import { Sequelize } from "../db/index.js";
+import { User } from "./user.model.js";
 
-const Video = sequelize.define(
+const Video = Sequelize.define(
   "Video",
   {
     videoFile: {
@@ -46,7 +47,6 @@ const Video = sequelize.define(
     timestamps: true }
 );
 
-Video.belongsTo(User, { as: "owner", foreignKey: "ownerId" });
 
 Sequelize.models.Video;
 

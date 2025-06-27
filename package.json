@@ -1,6 +1,7 @@
 {
   "name": "chaibackend",
   "version": "1.0.0",
+  "type": "module",
   "description": "A basic App for deploy",
   "main": "index.js",
   "scripts": {
