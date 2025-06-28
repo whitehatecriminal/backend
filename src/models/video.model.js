@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import { Sequelize } from "../db/index.js";
-import { User } from "./user.model.js";
 
 const Video = Sequelize.define(
   "Video",
@@ -37,7 +36,7 @@ const Video = Sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: User,
+        model: 'User',
         key: 'id'
       }
     }
